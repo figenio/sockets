@@ -1,0 +1,26 @@
+[
+  {
+    "id": 1,
+    "unicastAddress": "128.100.100.1",
+    "multicastAddress": "228.5.6.7",
+    "socket": 6789
+  },
+  {
+    "id": 2,
+    "unicastAddress": "128.100.100.2",
+    "multicastAddress": "228.5.6.7",
+    "socket": 6788
+  },
+  {
+    "id": 3,
+    "unicastAddress": "128.100.100.3",
+    "multicastAddress": "228.5.6.7",
+    "socket": 6787
+  },
+  {
+    "id": 4,
+    "unicastAddress": "128.100.100.4",
+    "multicastAddress": "228.5.6.7",
+    "socket": 6786
+  }
+]
