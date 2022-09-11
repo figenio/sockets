@@ -3,24 +3,28 @@
     "id": 1,
     "unicastAddress": "128.100.100.1",
     "multicastAddress": "228.5.6.7",
-    "socket": 6789
+    "unicastSocket": 6789,
+    "multicastSocket": 6779
   },
   {
     "id": 2,
     "unicastAddress": "128.100.100.2",
     "multicastAddress": "228.5.6.7",
-    "socket": 6788
+    "unicastSocket": 6788,
+    "multicastSocket": 6778
   },
   {
     "id": 3,
     "unicastAddress": "128.100.100.3",
     "multicastAddress": "228.5.6.7",
-    "socket": 6787
+    "unicastSocket": 6787,
+    "multicastSocket": 6777
   },
   {
     "id": 4,
     "unicastAddress": "128.100.100.4",
     "multicastAddress": "228.5.6.7",
-    "socket": 6786
+    "unicastSocket": 6786,
+    "multicastSocket": 6776
   }
 ]
