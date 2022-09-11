@@ -7,6 +7,9 @@ public class profile {
 
     private int bullyId; // Id do Coordenador
 
+    private multicastListener m;
+    private unicastListener u;
+
     private static int t1 = 3; // Tempo do Olá
     private static int t2 = 2; // Tempo de Resposta
     private static int t3 = 1; // Tempo de Coordenador
@@ -53,5 +56,33 @@ public class profile {
 
     public static int getT3() {
         return t3;
+    }
+
+    public void setM(multicastListener m) {
+        this.m = m;
+    }
+
+    public void setU(unicastListener u) {
+        this.u = u;
+    }
+
+    public boolean hasGreaterId () {
+        if (id == 4) {
+            return true;
+        } else {
+            return false;
+        }
+    }
+
+    public void startElection() throws InterruptedException {
+        u.startElection();
+    }
+
+    public void becomeCoordinator() {
+        m.becomeCoordinator();
+    }
+
+    public void waitCoordinator() {
+        m.waitCoordinator();
     }
 }

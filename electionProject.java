@@ -19,20 +19,18 @@ public class electionProject {
             // Read JSON with profile options
             JSONParser parser = new JSONParser();
             JSONArray profiles = (JSONArray) parser.parse(new FileReader("profiles.json"));
-            System.out.println("Chosen profile" + ((JSONObject) profiles.get(option-1)));
+            System.out.println("Chosen profile" + ((JSONObject) profiles.get(option - 1)));
 
             // Create process p with chosen profile of JSON
             profile p = new profile(
-                    Integer.parseInt(((JSONObject) profiles.get(option-1)).get("id").toString()),
-                    ((JSONObject) profiles.get(option-1)).get("unicastAddress").toString(),
-                    ((JSONObject) profiles.get(option-1)).get("multicastAddress").toString(),
-                    Integer.parseInt(((JSONObject) profiles.get(option-1)).get("unicastSocket").toString()),
-                    Integer.parseInt(((JSONObject) profiles.get(option-1)).get("multicastSocket").toString())
+                    Integer.parseInt(((JSONObject) profiles.get(option - 1)).get("id").toString()),
+                    ((JSONObject) profiles.get(option - 1)).get("unicastAddress").toString(),
+                    ((JSONObject) profiles.get(option - 1)).get("multicastAddress").toString(),
+                    Integer.parseInt(((JSONObject) profiles.get(option - 1)).get("unicastSocket").toString()),
+                    Integer.parseInt(((JSONObject) profiles.get(option - 1)).get("multicastSocket").toString())
             );
-
-            // Starts the multicast e unicast listeners associated with profile
-            unicastListener u = new unicastListener(p);
-            multicastListener m = new multicastListener(p, u);
+            p.setM(new multicastListener(p));
+            p.setU(new unicastListener(p));
         } catch (IOException e) {
             System.out.println("IO: " + e.getMessage());
         } catch (ParseException e) {

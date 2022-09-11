@@ -7,45 +7,54 @@ public class multicastListener extends Thread {
     InetAddress group = null; // Address of multicast group
     MulticastSocket s = null; // Socket for multicast communication
     int port; // Multicast group port
-    byte[] m = null; // Byte buffer for receiving and sending messages
+    byte[] buffer = null; // Byte buffer for receiving and sending messages
     Timer timer = new Timer();
 
-    DatagramPacket messageIn = null;
+    boolean amCoordinator = false;
 
-    public multicastListener(profile p, unicastListener u) {
+    DatagramPacket message = null;
+    profile p;
+
+    public multicastListener(profile p) {
         try {
             group = InetAddress.getByName(p.getMulticastAddress());
             port = p.getMulticastSocket();
             s = new MulticastSocket(p.getMulticastSocket());
-
+            this.p = p;
 
             s.joinGroup(group);
             System.out.println("Lets go boys");
-            m = "hello world.\n".getBytes();
-            DatagramPacket messageOut = new DatagramPacket(m, m.length, group, port);
-            s.send(messageOut);
+//            m = "hello world.\n".getBytes();
+//            DatagramPacket messageOut = new DatagramPacket(m, m.length, group, port);
+//            s.send(messageOut);
 
             while (true) {
-                m = new byte[1000]; // Clear buffer
                 this.start(); // Starts listening for message
-                this.timer.wait(profile.getT1() * 1000L); // Wait for message
+                Thread.sleep(profile.getT1() * 1000L); // Wait for message
 
-                if (messageIn.getLength() > 0) {
-                    // If message isn't hi, its new bully id
-                    if (!new String(m).equals("olá")) {
-                        p.setBullyId(Integer.parseInt(new String(m)));
-                    }
-                } else {
-                    Scanner scanner = new Scanner(System.in); // Create input reader
-                    System.out.println("No coordinator, do you want to start a election? (y/n)"); // Read input
-                    String option = scanner.nextLine();  // Assign profile
+                if (this.isAlive()) {
+                    this.interrupt();
+                }
 
-                    if (option.equals("y")) {
-                        u.startElection();
-                    } else if (option.equals("n")) {
-                        System.out.println("No election");
+                if (!amCoordinator) {
+                    if (message.getLength() > 0) {
+                        // If message isn't hi, it should be the new bully id
+                        if (isNumeric(new String(message.getData()))) {
+                            this.p.setBullyId(Integer.parseInt(new String(message.getData())));
+                        }
                     } else {
-                        System.out.println("Invalid input");
+                        // If no message was received, new elections are needed
+                        Scanner scanner = new Scanner(System.in); // Create input reader
+                        System.out.println("No coordinator, do you want to start a election? (y/n)"); // Read input
+                        String option = scanner.nextLine();  // Assess user option
+
+                        if (option.equals("y")) {
+                            this.p.startElection();
+                        } else if (option.equals("n")) {
+                            System.out.println("No election");
+                        } else {
+                            System.out.println("Invalid input");
+                        }
                     }
                 }
             }
@@ -60,22 +69,51 @@ public class multicastListener extends Thread {
 
     public void run() {
         try {
-            messageIn = new DatagramPacket(m, m.length);
-            s.receive(messageIn);
+            if (amCoordinator) {
+                buffer = "hi".getBytes();
+                message = new DatagramPacket(buffer, buffer.length, group, port);
+                s.send(message);
+            } else {
+                buffer = new byte[1000]; // Clear buffer
+                message = new DatagramPacket(buffer, buffer.length);
+                s.receive(message);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-//        try {
-//            byte[] buffer = new byte[1000];
-//            for(int i=0; i< 3;i++) {		// get messages from others in group
-//                DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
-//                    s.receive(messageIn);
-//                System.out.println("Received:" + new String(messageIn.getData()));
-//            }
-//            System.out.println("I'm done with this");
-//                s.leaveGroup(group);
-//        } catch (IOException e) {
-//            throw new RuntimeException(e);
-//        }finally {if(s != null) s.close();}
+    }
+
+    public void waitCoordinator() {
+        try {
+            this.start();
+            Thread.sleep(profile.getT3() * 1000L); // Wait for message
+            if (message.getLength() > 0 && isNumeric(new String(message.getData()))) {
+                p.setBullyId(Integer.parseInt(new String(message.getData())));
+            } else {
+                this.p.startElection();
+            }
+        } catch (InterruptedException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void becomeCoordinator() {
+        try {
+            amCoordinator = true;
+            byte[] b = String.valueOf(this.p.getId()).getBytes(); // sends self id to multicast
+            DatagramPacket m = new DatagramPacket(b, b.length, group, port);
+            s.send(m);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public static boolean isNumeric(String str) {
+        try {
+            Double.parseDouble(str);
+            return true;
+        } catch(NumberFormatException e){
+            return false;
+        }
     }
 }
