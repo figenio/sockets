@@ -3,6 +3,7 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import org.json.simple.parser.ParseException;
 
+import javax.sound.midi.Soundbank;
 import java.io.FileReader;
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -33,7 +34,7 @@ public class process {
                     Integer.parseInt(((JSONObject) profiles.get(option - 1)).get("multicastSocket").toString())
             );
 
-            DatagramSocket unicastSocket = new DatagramSocket(p.getUnicastSocket());
+            DatagramSocket unicastSocket = new DatagramSocket(p.getUnicastSocket()); // Socket for unicast communication
 
             InetAddress multicastGroup = InetAddress.getByName(p.getMulticastAddress()); // Multicast Group Address
             int multicastPort = p.getMulticastSocket(); // Port of multicast group
@@ -43,6 +44,35 @@ public class process {
 
             System.out.println("Starting participation in multicast group");
             while (true) {
+//                System.out.println("Unicast option"); // Read input
+//                int optionSelected = scanner.nextInt();  // Assign profile
+//                if (optionSelected == 1) { // RECEBE
+//                    System.out.println("Choose 1 - receive");
+//                    UnicastListener unicastListener = new UnicastListener(unicastSocket);
+//                    Thread.sleep(Profile.getT2() * 1000L);
+//
+//                    DatagramPacket unicastMessageIn = unicastListener.getMessageUp();
+//                    System.out.println("Received unicast:" +  new String(unicastMessageIn.getData()));
+//
+//                    System.out.println("Replied");
+//                    DatagramPacket reply = new DatagramPacket(unicastMessageIn.getData(), unicastMessageIn.getLength(),
+//                            unicastMessageIn.getAddress(), unicastMessageIn.getPort());
+//                    unicastSocket.send(reply);
+//                } else { // MANDA
+//                    System.out.println("Choose 2");
+//                    byte [] m = "hi".getBytes();
+//                    InetAddress aHost = InetAddress.getByName("localhost");
+//                    int serverPort = 6789;
+//                    DatagramPacket request = new DatagramPacket(m,  "hi".length(), aHost, serverPort);
+//                    unicastSocket.send(request);
+//                    System.out.println("Sent request");
+//
+//                    UnicastListener unicastListener = new UnicastListener(unicastSocket);
+//                    Thread.sleep(Profile.getT2() * 1000L);
+//                    DatagramPacket unicastMessageIn = unicastListener.getMessageUp();
+//                    System.out.println("Received Reply: " + new String(unicastMessageIn.getData()));
+//                }
+
                 if (p.getId() == p.getCoordinatorId()) {
                     byte[] buffer = "hi".getBytes();
                     DatagramPacket message = new DatagramPacket(buffer, buffer.length, multicastGroup, multicastPort);
@@ -55,12 +85,14 @@ public class process {
 
                     Thread.sleep(Profile.getT1() * 1000L);
 
-                    DatagramPacket unicastMessageIn = unicastListener.getMessageUp();
+                    DatagramPacket unicastMessageIn = unicastListener.getMessageUp()
                     String multicastMessageIn = multicastListener.getMessageToReturn();
 
                     unicastListener.stop();
                     multicastListener.stop();
 
+                    System.out.println("Receiving unicast:" + unicastMessageIn);
+                    System.out.println("Receiving multicast:" + multicastMessageIn);
                     if (unicastMessageIn != null) {
                         System.out.println("Received unicast");
                         if (new String(unicastMessageIn.getData()).equals("election")) {
@@ -69,10 +101,7 @@ public class process {
                             DatagramPacket request = new DatagramPacket(m, "election".length(), unicastMessageIn.getAddress(), unicastMessageIn.getPort());
                             unicastSocket.send(request);
                         }
-                    }
-
-                    System.out.println("Receiving:" + multicastMessageIn);
-                    if (multicastMessageIn != null) {
+                    } else if (multicastMessageIn != null) {
                         if (isNumeric(multicastMessageIn)) {
                             p.setCoordinatorId(Integer.parseInt(multicastMessageIn));
                         }
@@ -115,6 +144,7 @@ public class process {
                 DatagramPacket message = unicastListener.getMessageUp();
                 unicastListener.stop();
 
+                System.out.println("Unicast response of election message: " + message);
                 if (message != null && new String(message.getData()).equals("response")) {
                     System.out.println("Response received");
                     MulticastListener multicastListener = new MulticastListener(multicastSocket);
@@ -147,12 +177,12 @@ public class process {
     }
 
     public static void sendElectionMessage(int processId, Profile p, JSONArray profiles, DatagramSocket unicastSocket) {
-        System.out.println("Sending election message");
+        System.out.println("Sending election message to: " + profiles.get(processId - 1));
         try {
             byte[] m = "election".getBytes();
             InetAddress aHost = InetAddress.getByName("localhost");
-            int receivingPort = Integer.parseInt(((JSONObject) profiles.get(processId - 1)).get("unicastSocket").toString());
-            DatagramPacket request = new DatagramPacket(m, "election".length(), aHost, receivingPort);
+            int targetPort = Integer.parseInt(((JSONObject) profiles.get(processId - 1)).get("unicastSocket").toString());
+            DatagramPacket request = new DatagramPacket(m, "election".length(), aHost, targetPort);
             unicastSocket.send(request);
         } catch (IOException e) {
             throw new RuntimeException(e);

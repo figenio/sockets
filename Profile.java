@@ -8,8 +8,8 @@ public class Profile {
     private int coordinatorId; // Id do Coordenador
 
     private static int t1 = 1; // Tempo do Olá
-    private static int t2 = 3; // Tempo de Resposta
-    private static int t3 = 5; // Tempo de Coordenador
+    private static int t2 = 5; // Tempo de Resposta
+    private static int t3 = 10; // Tempo de Coordenador
 
     public Profile(int id, String unicastAddress, String multicastAddress, int unicastSocket, int multicastSocket) {
         this.id = id;
@@ -61,7 +61,7 @@ public class Profile {
     }
 
 
-    public boolean hasGreaterId () {
+    public boolean hasGreaterId() {
         if (id == 4) {
             return true;
         } else {
