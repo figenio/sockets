@@ -11,20 +11,20 @@
     "unicastAddress": "localhost",
     "multicastAddress": "228.5.6.7",
     "unicastSocket": 6788,
-    "multicastSocket": 6778
+    "multicastSocket": 6779
   },
   {
     "id": 3,
     "unicastAddress": "localhost",
     "multicastAddress": "228.5.6.7",
     "unicastSocket": 6787,
-    "multicastSocket": 6777
+    "multicastSocket": 6779
   },
   {
     "id": 4,
     "unicastAddress": "localhost",
     "multicastAddress": "228.5.6.7",
     "unicastSocket": 6786,
-    "multicastSocket": 6776
+    "multicastSocket": 6779
   }
 ]

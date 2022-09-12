@@ -1,20 +1,17 @@
-public class profile {
+public class Profile {
     private int id;
     private String unicastAddress;
     private String multicastAddress;
     private int unicastSocket;
     private int multicastSocket;
 
-    private int bullyId; // Id do Coordenador
+    private int coordinatorId; // Id do Coordenador
 
-    private multicastListener m;
-    private unicastListener u;
+    private static int t1 = 1; // Tempo do Olá
+    private static int t2 = 3; // Tempo de Resposta
+    private static int t3 = 5; // Tempo de Coordenador
 
-    private static int t1 = 3; // Tempo do Olá
-    private static int t2 = 2; // Tempo de Resposta
-    private static int t3 = 1; // Tempo de Coordenador
-
-    public profile(int id, String unicastAddress, String multicastAddress, int unicastSocket, int multicastSocket) {
+    public Profile(int id, String unicastAddress, String multicastAddress, int unicastSocket, int multicastSocket) {
         this.id = id;
         this.unicastAddress = unicastAddress;
         this.multicastAddress = multicastAddress;
@@ -30,12 +27,17 @@ public class profile {
         return multicastSocket;
     }
 
-    public void setBullyId(int bullyId) {
-        this.bullyId = bullyId;
+    public void setCoordinatorId(int coordinatorId) {
+        System.out.println("Setting new coordinator:" + coordinatorId);
+        this.coordinatorId = coordinatorId;
     }
 
     public int getId() {
         return id;
+    }
+
+    public int getCoordinatorId() {
+        return coordinatorId;
     }
 
     public String getUnicastAddress() {
@@ -57,13 +59,6 @@ public class profile {
     public static int getT3() {
         return t3;
     }
-
-    public void setM(multicastListener m) {
-        this.m = m;
-    }
-
-    public void setU(unicastListener u) {
-        this.u = u;
     }
 
     public boolean hasGreaterId () {
@@ -72,17 +67,5 @@ public class profile {
         } else {
             return false;
         }
-    }
-
-    public void startElection() throws InterruptedException {
-        u.startElection();
-    }
-
-    public void becomeCoordinator() {
-        m.becomeCoordinator();
-    }
-
-    public void waitCoordinator() {
-        m.waitCoordinator();
     }
 }
