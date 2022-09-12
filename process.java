@@ -150,7 +150,7 @@ public class process {
         System.out.println("Sending election message");
         try {
             byte[] m = "election".getBytes();
-            InetAddress aHost = InetAddress.getByName(p.getUnicastAddress());
+            InetAddress aHost = InetAddress.getByName("localhost");
             int receivingPort = Integer.parseInt(((JSONObject) profiles.get(processId - 1)).get("unicastSocket").toString());
             DatagramPacket request = new DatagramPacket(m, "election".length(), aHost, receivingPort);
             unicastSocket.send(request);

@@ -23,7 +23,7 @@ public class UnicastListener extends Thread {
             byte[] buffer = new byte[1000];
             DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
             unicastSocket.receive(messageIn);
-            System.out.println("Received unicast");
+            System.out.println("Received unicast:" + messageIn);
             messageUp = messageIn;
         } catch (IOException e) {
             throw new RuntimeException(e);

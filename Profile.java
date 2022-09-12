@@ -59,7 +59,7 @@ public class Profile {
     public static int getT3() {
         return t3;
     }
-    }
+
 
     public boolean hasGreaterId () {
         if (id == 4) {
