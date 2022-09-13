@@ -1,10 +1,12 @@
 import java.io.IOException;
 import java.net.*;
+import java.util.LinkedList;
+import java.util.Queue;
 import java.util.Timer;
 
 public class MulticastListener extends Thread {
     MulticastSocket multicastSocket;
-    String messageToReturn = null;
+    Queue<String> messageToReturn = new LinkedList<>();
 
     public MulticastListener(MulticastSocket multicastSocket) {
         this.multicastSocket = multicastSocket;
@@ -18,7 +20,7 @@ public class MulticastListener extends Thread {
                 byte[] buffer = new byte[1000];
                 DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
                 multicastSocket.receive(messageIn);
-                messageToReturn = new String(messageIn.getData());
+                messageToReturn.add(new String(messageIn.getData()));
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -26,6 +28,9 @@ public class MulticastListener extends Thread {
     }
 
     public String getMessageToReturn() {
-        return messageToReturn;
+        if (!messageToReturn.isEmpty())
+            return messageToReturn.remove();
+        else
+            return null;
     }
 }

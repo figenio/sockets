@@ -1,10 +1,12 @@
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class UnicastListener extends Thread {
     DatagramSocket unicastSocket; // Socket for unicast communication
-    DatagramPacket datagramToReturn = null;
+    Queue<DatagramPacket> datagramToReturn = new LinkedList<>();
 
     public UnicastListener(DatagramSocket unicastSocket) {
         this.unicastSocket = unicastSocket;
@@ -18,7 +20,7 @@ public class UnicastListener extends Thread {
                 byte[] buffer = new byte[1000];
                 DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
                 unicastSocket.receive(messageIn);
-                datagramToReturn = messageIn;
+                datagramToReturn.add(messageIn);
             }
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -27,8 +29,9 @@ public class UnicastListener extends Thread {
 
 
     public DatagramPacket getDatagramToReturn() {
-        DatagramPacket out = datagramToReturn;
-        datagramToReturn = null;
-        return out;
+        if (!datagramToReturn.isEmpty())
+            return datagramToReturn.remove();
+        else
+            return null;
     }
 }
