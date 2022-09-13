@@ -13,10 +13,13 @@ public class MulticastListener extends Thread {
 
     public void run() {
         try {
-            byte[] buffer = new byte[1000];
-            DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
-            multicastSocket.receive(messageIn);
-            messageToReturn = new String(messageIn.getData());
+            while (true) {
+                // Unicast is always listening and saving what it receives
+                byte[] buffer = new byte[1000];
+                DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
+                multicastSocket.receive(messageIn);
+                messageToReturn = new String(messageIn.getData());
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
