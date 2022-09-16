@@ -9,6 +9,7 @@ public class MulticastListener extends Thread {
     Queue<String> messageToReturn = new LinkedList<>();
 
     public MulticastListener(MulticastSocket multicastSocket) {
+        // Salves multicast socket and starts listening for messages
         this.multicastSocket = multicastSocket;
         this.start();
     }
@@ -16,7 +17,7 @@ public class MulticastListener extends Thread {
     public void run() {
         try {
             while (true) {
-                // Unicast is always listening and saving what it receives
+                // Multicast is always listening and saving what it receives in a queue
                 byte[] buffer = new byte[1000];
                 DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
                 multicastSocket.receive(messageIn);
@@ -28,9 +29,12 @@ public class MulticastListener extends Thread {
     }
 
     public String getMessageToReturn() {
+        // Checks if message queue is empty
         if (!messageToReturn.isEmpty())
+            // If not, removes and returns the first message on top
             return messageToReturn.remove();
         else
+            // If it is, returns null
             return null;
     }
 }
