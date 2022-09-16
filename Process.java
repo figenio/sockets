@@ -18,6 +18,8 @@ public class Process {
     private InetAddress processAddress;
     private DatagramSocket unicastSocket;
     private MulticastSocket multicastSocket;
+    private UnicastListener unicastListener;
+    private MulticastListener multicastListener;
 
     private static int t1 = 5; // Hi message time
     private static int t2 = 7; // Election message time
@@ -38,6 +40,10 @@ public class Process {
 
             multicastSocket.joinGroup(multicastGroupAddress); // Joining multicast group
 
+            // Create listeners to receive messages
+            unicastListener = new UnicastListener(unicastSocket);
+            multicastListener = new MulticastListener(multicastSocket);
+
             // Reads and registers other processes info
             JSONParser parser = new JSONParser();
             profiles = (JSONArray) parser.parse(new FileReader("profiles.json"));
@@ -51,64 +57,68 @@ public class Process {
     private void initiateProcess() {
         try {
             while (true) {
+                System.out.print("Waiting messages - ");
                 if (id == coordinatorId) {
                     byte[] buffer = "hi".getBytes();
                     DatagramPacket message = new DatagramPacket(buffer, buffer.length, multicastGroupAddress, multicastGroupPort);
                     multicastSocket.send(message);
                     System.out.println("Sending Hi");
-                    Thread.sleep(t1 * 1000L);
-                } else {
-                    System.out.print("Creating listeners - ");
-                    // Create listeners to receive messages
-                    UnicastListener unicastListener = new UnicastListener(unicastSocket);
-                    MulticastListener multicastListener = new MulticastListener(multicastSocket);
+                }
 
-                    // Waits T1 for messages of hi or election
-                    Thread.sleep(t1 * 1000L);
+                // Waits T1 for messages of hi or election
+                Thread.sleep(t1 * 1000L);
 
-                    // Gets the messages stored in the listeners
-                    DatagramPacket unicastMessageIn = unicastListener.getMessageUp();
-                    String multicastMessageIn = multicastListener.getMessageToReturn();
+                // Gets the messages stored in the listeners
+                DatagramPacket unicastMessageIn = unicastListener.getDatagramToReturn();
+                String multicastMessageIn = multicastListener.getMessageToReturn();
 
-                    // Stops the running threads
-                    unicastListener.stop();
-                    multicastListener.stop();
-
-                    if (unicastMessageIn != null) {
-                        // Checks if received unicast message and if it is an election message
-                        System.out.println("Unicast in: " + new String(unicastMessageIn.getData()));
-                        // If so, answers the process that send it that the message was received
-                        if (new String(unicastMessageIn.getData()).equals("election")) {
-                            System.out.println("Sending election response");
-                            byte[] m = "response".getBytes();
-                            DatagramPacket request = new DatagramPacket(m, "response".length(), unicastMessageIn.getAddress(), unicastMessageIn.getPort());
-                            unicastSocket.send(request);
+                if (unicastMessageIn != null) {
+                    // Checks if received unicast message and if it is an election message
+                    System.out.println("Unicast in: " + new String(unicastMessageIn.getData()));
+                    // If so, answers the process that send it that the message was received
+                    if (new String(unicastMessageIn.getData()).startsWith("election")) {
+                        System.out.println("Sending election response");
+                        byte[] m = "response".getBytes();
+                        DatagramPacket request = new DatagramPacket(m, m.length, unicastMessageIn.getAddress(), unicastMessageIn.getPort());
+                        unicastSocket.send(request);
+                        if (multicastMessageIn != null) {
+                            String newCoordinatorId = Character.toString(multicastMessageIn.charAt(0));
+                            if (isNumeric(newCoordinatorId)) {
+                                // If multicast message is an id, sets new coordinator
+                                System.out.println("New coordinator id via multicast:" + newCoordinatorId);
+                                setCoordinatorId(Integer.parseInt(newCoordinatorId));
+                            } else if (!(id == coordinatorId)) {
+                                startElection();
+                            }
+                        } else if (!(id == coordinatorId)) {
                             startElection();
                         }
-                    } else if (multicastMessageIn != null) {
-                        // Checks if received multicast message
-                        System.out.println("Multicast in:" + multicastMessageIn);
-                        if (isNumeric(multicastMessageIn)) {
-                            // If multicast message is an id, sets new coordinator
-                            System.out.println("New coordinator id via multicast:" + multicastMessageIn);
-                            setCoordinatorId(Integer.parseInt(multicastMessageIn));
-                        }
+                    }
+                } else if (multicastMessageIn != null && !(id == coordinatorId)) {
+                    // Checks if received multicast message
+                    System.out.println("Multicast in:" + multicastMessageIn);
+                    String newCoordinatorId = Character.toString(multicastMessageIn.charAt(0));
+                    if (isNumeric(newCoordinatorId)) {
+                        // If multicast message is an id, sets new coordinator
+                        System.out.println("New coordinator id via multicast:" + newCoordinatorId);
+                        setCoordinatorId(Integer.parseInt(newCoordinatorId));
+                    }
+                } else if (!(id == coordinatorId)) {
+                    // If no message, asks user permission to start election
+                    Scanner scanner = new Scanner(System.in); // Create input reader
+                    System.out.println("\nNo coordinator alive, do you want to start a election? (y/n)"); // Ask input
+                    String userOption = scanner.nextLine();  // Read input
+
+                    if (userOption.equals("y")) {
+                        startElection();
+                    } else if (userOption.equals("n")) {
+                        System.out.println("No election");
                     } else {
-                        // If no message, asks user permission to start election
-                        Scanner scanner = new Scanner(System.in); // Create input reader
-                        System.out.println("\nNo coordinator alive, do you want to start a election? (y/n)"); // Ask input
-                        String userOption = scanner.nextLine();  // Read input
-
-                        if (userOption.equals("y")) {
-                            startElection();
-                        } else if (userOption.equals("n")) {
-                            System.out.println("No election");
-                        } else {
-                            System.out.println("Invalid input");
-                        }
+                        System.out.println("Invalid input");
                     }
                 }
             }
+
         } catch (InterruptedException | IOException e) {
             throw new RuntimeException(e);
         }
@@ -121,26 +131,25 @@ public class Process {
             for (int i = 4; i > id; i--) {
                 sendElectionMessage(i);
             }
-            // Creates unicast listener and awaits for response
-            UnicastListener unicastListener = new UnicastListener(unicastSocket);
+            // Waits for response
             Thread.sleep(t2 * 1000L);
+            DatagramPacket message = unicastListener.getDatagramToReturn(); // Retrieves any message received in unicast
 
-            DatagramPacket message = unicastListener.getMessageUp(); // Retrieves any message received in unicast
-            unicastListener.stop(); // Kills thread
-
-            System.out.println("Unicast response of election message: " + message);
-            if (message != null && new String(message.getData()).equals("response")) {
+            if (message != null && new String(message.getData()).startsWith("response")) {
                 // If received a response message
                 System.out.println("Response received");
-                MulticastListener multicastListener = new MulticastListener(multicastSocket); // Creates multicast listener
                 Thread.sleep(t3 * 1000L); // Waits coordinator message
-                String messageIn = multicastListener.getMessageToReturn(); // Retrieves any message
-                multicastListener.stop(); // Kills thread
+                String messageIn = multicastListener.getMessageToReturn(); // Retrieves any message received in multicast
 
+                System.out.println("After response, it received: " + messageIn);
                 // If received a coordinator id, sets new coordinator
-                if (messageIn != null && isNumeric(messageIn)) {
-                    System.out.println("Received new coordinator: " + messageIn);
-                    setCoordinatorId(Integer.parseInt(messageIn));
+                if (messageIn != null) {
+                    String newCoordinatorId = Character.toString(messageIn.charAt(0));
+                    if (isNumeric(newCoordinatorId)) {
+                        // If multicast message is an id, sets new coordinator
+                        System.out.println("Received new coordinator: " + messageIn);
+                        setCoordinatorId(Integer.parseInt(newCoordinatorId));
+                    }
                 } else {
                     startElection();
                 }
@@ -148,6 +157,7 @@ public class Process {
                 // If didn't receive any response, becomes coordinator
                 becomeCoordinator();
             }
+
         } catch (InterruptedException e) {
             throw new RuntimeException(e);
         }
@@ -161,7 +171,7 @@ public class Process {
             InetAddress aHost = InetAddress.getByName("localhost");
             int targetPort = Integer.parseInt(((JSONObject) profiles.get(processId - 1)).get("unicastSocket").toString());
             // Builds Datagram
-            DatagramPacket request = new DatagramPacket(m, "election".length(), aHost, targetPort);
+            DatagramPacket request = new DatagramPacket(m, m.length, aHost, targetPort);
             // Sends Datagram
             unicastSocket.send(request);
         } catch (IOException e) {
@@ -173,8 +183,8 @@ public class Process {
         System.out.println("Becoming Coordinator");
         try {
             byte[] b = String.valueOf(id).getBytes(); // Sends self id to multicast
-            System.out.println("Self id to coordinator: " + new String(b));
-            DatagramPacket m = new DatagramPacket(b, String.valueOf(id).length(), multicastGroupAddress, multicastGroupPort);
+            System.out.println("Self id to coordinator: " + new String(b) + ".");
+            DatagramPacket m = new DatagramPacket(b, b.length, multicastGroupAddress, multicastGroupPort);
             multicastSocket.send(m);
             setCoordinatorId(id); // Sets self id has coordinator
         } catch (IOException e) {
@@ -183,7 +193,7 @@ public class Process {
     }
 
     public void setCoordinatorId(int coordinatorId) {
-        System.out.println("Setting new coordinator:" + coordinatorId);
+        System.out.println("Setting new coordinator: " + coordinatorId);
         this.coordinatorId = coordinatorId;
     }
 

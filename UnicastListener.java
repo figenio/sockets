@@ -1,17 +1,12 @@
-import org.json.simple.JSONArray;
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.json.simple.parser.ParseException;
-
-import java.io.FileReader;
 import java.io.IOException;
 import java.net.DatagramPacket;
 import java.net.DatagramSocket;
-import java.net.InetAddress;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class UnicastListener extends Thread {
     DatagramSocket unicastSocket; // Socket for unicast communication
-    DatagramPacket messageUp = null;
+    Queue<DatagramPacket> datagramToReturn = new LinkedList<>();
 
     public UnicastListener(DatagramSocket unicastSocket) {
         this.unicastSocket = unicastSocket;
@@ -20,16 +15,23 @@ public class UnicastListener extends Thread {
 
     public void run() {
         try {
-            byte[] buffer = new byte[1000];
-            DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
-            unicastSocket.receive(messageIn);
-            messageUp = messageIn;
+            while (true) {
+                // Unicast is always listening and saving what it receives
+                byte[] buffer = new byte[1000];
+                DatagramPacket messageIn = new DatagramPacket(buffer, buffer.length);
+                unicastSocket.receive(messageIn);
+                datagramToReturn.add(messageIn);
+            }
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
     }
 
-    public DatagramPacket getMessageUp() {
-        return messageUp;
+
+    public DatagramPacket getDatagramToReturn() {
+        if (!datagramToReturn.isEmpty())
+            return datagramToReturn.remove();
+        else
+            return null;
     }
 }
